@@ -5,6 +5,6 @@ package sim;
  */
 public class ConceptFinder {
 
-    
+
 
 }
