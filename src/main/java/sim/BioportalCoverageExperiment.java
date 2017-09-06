@@ -3,6 +3,7 @@ package sim;
 import com.opencsv.CSVReader;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
@@ -23,6 +24,107 @@ public class BioportalCoverageExperiment {
         File relatednessFile = new File(args[2]);
         File similarityFile = new File(args[3]);
 
+//        findCoveredTerms(ontDir, analogyFile, relatednessFile, similarityFile);
+        findCoveredPairs(ontDir, analogyFile, relatednessFile, similarityFile);
+
+    }
+
+
+    private static void findCoveredPairs(File ontDir, File analogyFile,
+                                         File relatednessFile, File similarityFile) throws IOException {
+        log.info("Loading CSV files");
+        Set<String[]> analogyPairs = getAnalogyPairs(analogyFile);
+        Set<String[]> relatednessPairs = getRelatednessPairs(relatednessFile);
+        Set<String[]> similarityPairs = getSimilarityPairs(similarityFile);
+
+        Set<String[]> allPairs = new HashSet<>(analogyPairs);
+        allPairs.addAll(relatednessPairs);
+        allPairs.addAll(similarityPairs);
+
+        Set<String> allTerms = new HashSet<>();
+        for (String[] pair : allPairs) {
+            allTerms.add(pair[0]);
+            allTerms.add(pair[1]);
+        }
+
+        Map<String, Set<String>> termOntsMap = new HashMap<>();
+        for (String term : allTerms) {
+            termOntsMap.put(term, new HashSet<>());
+        }
+
+        log.info("Checking ontologies");
+        int ontCount = 0;
+        for (File ontFile : ontDir.listFiles()) {
+            log.info("\tLoading " + ++ontCount + " : " + ontFile.getName());
+            OntologyLoader loader = new OntologyLoader(ontFile, true);
+            ClassFinder finder = new ClassFinder(loader.getOntology());
+            int termCount = 0;
+            for (String term : termOntsMap.keySet()) {
+                Set<String> onts = termOntsMap.get(term);
+                if (finder.contains(term)) {
+                    onts.add(ontFile.getName());
+                }
+                if (++termCount % 100 == 0) {
+                    log.info("\t\t" + termCount + " terms are checked");
+                }
+            }
+        }
+
+        int pairsCoveredCount = 0;
+        for (String[] pair : allPairs) {
+            Set<String> onts1 = termOntsMap.get(pair[0]);
+            Set<String> onts2 = termOntsMap.get(pair[1]);
+            if (onts1.isEmpty() || onts2.isEmpty()) {
+                continue;
+            }
+            for (String ont : onts1) {
+                if (onts2.contains(ont)) {
+                    pairsCoveredCount++;
+                    break;
+                }
+            }
+        }
+
+        log.info(pairsCoveredCount + " / " + allPairs.size() + " term pairs are found");
+
+    }
+
+    private static Set<String[]> getAnalogyPairs(File analogyFile) throws IOException {
+        Set<String[]> pairs = new HashSet<>();
+        CSVReader reader = new CSVReader(new FileReader(analogyFile));
+        List<String[]> rows = reader.readAll();
+        for (String[] row : rows) {
+            pairs.add(new String[]{row[0].toLowerCase(), row[1].toLowerCase()});
+            pairs.add(new String[]{row[2].toLowerCase(), row[3].toLowerCase()});
+        }
+        return pairs;
+    }
+
+    private static Set<String[]> getRelatednessPairs(File relatednessFile) throws IOException {
+        Set<String[]> pairs = new HashSet<>();
+        CSVReader reader = new CSVReader(new FileReader(relatednessFile));
+        List<String[]> rows = reader.readAll();
+        for (String[] row : rows) {
+            pairs.add(new String[]{row[2].toLowerCase(), row[3].toLowerCase()});
+        }
+        return pairs;
+    }
+
+    private static Set<String[]> getSimilarityPairs(File similarityFile) throws IOException {
+        Set<String[]> pairs = new HashSet<>();
+        CSVReader reader = new CSVReader(new FileReader(similarityFile));
+        List<String[]> rows = reader.readAll();
+        for (String[] row : rows) {
+            pairs.add(new String[]{row[2].toLowerCase(), row[3].toLowerCase()});
+        }
+        return pairs;
+    }
+
+
+
+
+    private static void findCoveredTerms(File ontDir, File analogyFile,
+                                         File relatednessFile, File similarityFile) throws IOException {
         log.info("Loading CSV files");
         Set<String> analogyTerms = getAnalogyTerms(analogyFile);
         Set<String> relatednessTerms = getRelatednessTerms(relatednessFile);
@@ -64,7 +166,6 @@ public class BioportalCoverageExperiment {
         }
 
         log.info(termsCoveredCount + " / " + allTerms.size() + " terms are found");
-
     }
 
 
