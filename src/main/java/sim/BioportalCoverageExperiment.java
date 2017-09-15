@@ -3,7 +3,6 @@ package sim;
 import com.opencsv.CSVReader;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
@@ -68,6 +67,12 @@ public class BioportalCoverageExperiment {
                     log.info("\t\t" + termCount + " terms are checked");
                 }
             }
+
+        }
+
+        Map<String, Set<String[]>> ontTermsMap = new HashMap<>();
+        for (File ontFile : ontDir.listFiles()) {
+            termOntsMap.put(ontFile.getName(), new HashSet<>());
         }
 
         int pairsCoveredCount = 0;
@@ -83,9 +88,18 @@ public class BioportalCoverageExperiment {
                     break;
                 }
             }
+            for (String ont : onts1) {
+                if (onts2.contains(ont)) {
+                    Set<String[]> ontPairs = ontTermsMap.get(ont);
+                    ontPairs.add(pair);
+                }
+            }
         }
 
         log.info(pairsCoveredCount + " / " + allPairs.size() + " term pairs are found");
+
+        Out.p("\nPairs distribution over ontologies:\n");
+        Out.p(ontTermsMap);
 
     }
 
