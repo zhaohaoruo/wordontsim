@@ -72,7 +72,7 @@ public class BioportalCoverageExperiment {
 
         Map<String, Set<String[]>> ontTermsMap = new HashMap<>();
         for (File ontFile : ontDir.listFiles()) {
-            termOntsMap.put(ontFile.getName(), new HashSet<>());
+            ontTermsMap.put(ontFile.getName(), new HashSet<>());
         }
 
         int pairsCoveredCount = 0;
