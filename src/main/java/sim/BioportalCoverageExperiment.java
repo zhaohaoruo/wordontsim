@@ -99,7 +99,9 @@ public class BioportalCoverageExperiment {
         log.info(pairsCoveredCount + " / " + allPairs.size() + " term pairs are found");
 
         Out.p("\nPairs distribution over ontologies:\n");
-        Out.p(ontTermsMap);
+        for (String ont : ontTermsMap.keySet()) {
+            Out.p(ont + " : " + ontTermsMap.get(ont).size() + " term pairs");
+        }
 
     }
 
